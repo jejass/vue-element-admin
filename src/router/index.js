@@ -9,7 +9,7 @@ import Layout from '@/layout'
 /* Router Modules */
 import componentsRouter from './modules/components'
 import chartsRouter from './modules/charts'
-import tableRouter from './modules/table'
+import gxq from './modules/gxq'
 import nestedRouter from './modules/nested'
 
 /**
@@ -79,10 +79,11 @@ export const constantRoutes = [
         path: 'dashboard',
         component: () => import('@/views/dashboard/index'),
         name: 'Dashboard',
-        meta: { title: 'Dashboard', icon: 'dashboard', affix: true }
+        meta: { title: '督察数据综合查询库', icon: 'dashboard', affix: true }
       }
     ]
   },
+  gxq,
   {
     path: '/documentation',
     component: Layout,
@@ -188,7 +189,6 @@ export const asyncRoutes = [
   componentsRouter,
   chartsRouter,
   nestedRouter,
-  tableRouter,
 
   {
     path: '/example',
