@@ -5,7 +5,7 @@ import Layout from '@/layout'
 const gxq = {
   path: '/gxq',
   component: Layout,
-  redirect: '/gxq/zzb',
+  redirect: '/gxq/gxqzzb',
   name: 'gxq',
   meta: {
     title: '高新区',
@@ -13,52 +13,52 @@ const gxq = {
   },
   children: [
     {
-      path: 'zzb',
+      path: 'gxqzzb',
       component: () => import('@/views/table/complex-table'),
-      name: 'zzb',
+      name: 'gxqzzb',
       meta: { title: '早中班', area: 'gxq', type: 'zzb' }
     },
     {
-      path: 'rcxc',
+      path: 'gxqrcxc',
       component: () => import('@/views/table/complex-table'),
-      name: 'rcxc',
+      name: 'gxqrcxc',
       meta: { title: '日常巡查', area: 'gxq', type: 'rcxc' }
     },
     {
-      path: 'gdhc',
+      path: 'gxqgdhc',
       component: () => import('@/views/table/complex-table'),
-      name: 'gdhc',
+      name: 'gxqgdhc',
       meta: { title: '工单核查', area: 'gxq', type: 'gdhc' }
     },
     {
-      path: 'gdcc',
+      path: 'gxqgdcc',
       component: () => import('@/views/table/complex-table'),
-      name: 'gdcc',
+      name: 'gxqgdcc',
       meta: { title: '工单抽查', area: 'gxq', type: 'gdcc' }
     },
     {
-      path: 'wtsl',
+      path: 'gxqwtsl',
       component: () => import('@/views/table/complex-table'),
-      name: 'wtsl',
+      name: 'gxqwtsl',
       meta: { title: '问题梳理', area: 'gxq', type: 'wtsl' }
     },
     {
-      path: 'zglxd',
+      path: 'gxqzglxd',
       component: () => import('@/views/table/complex-table'),
-      name: 'zglxd',
-      meta: { title: '高新区-整改联系单', area: 'gxq', type: 'zglxd' }
+      name: 'gxqzglxd',
+      meta: { title: '整改联系单', area: 'gxq', type: 'zglxd' }
     },
     {
-      path: 'ldjb',
+      path: 'gxqldjb',
       component: () => import('@/views/table/complex-table'),
-      name: 'ldjb',
-      meta: { title: '高新区-领导交办', area: 'gxq', type: 'ldjb' }
+      name: 'gxqldjb',
+      meta: { title: '领导交办', area: 'gxq', type: 'ldjb' }
     },
     {
-      path: 'wmcs',
+      path: 'gxqwmcs',
       component: () => import('@/views/table/complex-table'),
-      name: 'wmcs',
-      meta: { title: '高新区-文明城市', area: 'gxq', type: 'wmcs' }
+      name: 'gxqwmcs',
+      meta: { title: '文明城市', area: 'gxq', type: 'wmcs' }
     }
   ]
 }

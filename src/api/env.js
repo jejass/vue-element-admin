@@ -4,7 +4,7 @@ export function fetchIssueTypes() {
   return request({
     url: '/issueTypes',
     method: 'get',
-    baseURL: 'http://localhost:8080'
+    baseURL: 'http://localhost:7779'
   })
 }
 
@@ -12,7 +12,7 @@ export function fetchDistrict(area) {
   return request({
     url: '/district/' + area,
     method: 'get',
-    baseURL: 'http://localhost:8080'
+    baseURL: 'http://localhost:7779'
   }
   )
 }
@@ -22,7 +22,7 @@ export function fetchIssues(query) {
     url: '/issueList',
     method: 'get',
     params: query,
-    baseURL: 'http://localhost:8080'
+    baseURL: 'http://localhost:7779'
   }
   )
 }
@@ -32,7 +32,7 @@ export function createIssue(data) {
     url: '/saveIssue',
     method: 'post',
     data,
-    baseURL: 'http://localhost:8080'
+    baseURL: 'http://localhost:7779'
   })
 }
 
@@ -41,7 +41,7 @@ export function updateIssue(data) {
     url: '/updateIssue',
     method: 'put',
     data,
-    baseURL: 'http://localhost:8080'
+    baseURL: 'http://localhost:7779'
   })
 }
 
@@ -49,6 +49,6 @@ export function deleteIssue(id) {
   return request({
     url: `/deleteIssue/${id}`,
     method: 'delete',
-    baseURL: 'http://localhost:8080'
+    baseURL: 'http://localhost:7779'
   })
 }

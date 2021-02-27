@@ -66,7 +66,7 @@
         icon="el-icon-download"
         @click="handleDownload"
       >
-        Export
+        导出
       </el-button>
     </div>
 
@@ -84,18 +84,18 @@
         label="创建时间"
         prop="createdate"
         align="center"
-        width="95"
+        width="135px"
       >
         <template slot-scope="{ row }">
           <span>{{ row.createdate }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="主要问题" min-width="150px" align="center">
+      <el-table-column label="主要问题" min-width="100px" align="center">
         <template slot-scope="{ row }">
           <span>{{ row.description }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="行政区域" width="150px">
+      <el-table-column label="行政区域" align="center" width="120px">
         <template slot-scope="{ row }">
           <span>{{ row.areaName }}</span>
         </template>
@@ -110,7 +110,7 @@
           <span>{{ row.issueTypeName }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="拍摄人员" width="120px">
+      <el-table-column label="拍摄人员" align="center" width="120px">
         <template slot-scope="{ row }">
           <span>{{ row.filmMaker }}</span>
         </template>
@@ -123,16 +123,23 @@
       <el-table-column
         label="操作"
         align="center"
-        width="230"
+        width="420"
         class-name="small-padding fixed-width"
       >
         <template slot-scope="{ row, $index }">
           <el-button type="primary" size="mini" @click="handleUpdate(row)">
             编辑
           </el-button>
-
+          <el-button type="info" size="mini" @click="onPreview(row)">
+            图片查看
+          </el-button>
+          <el-button type="info" size="mini" @click="onReImagePreview(row)">
+            复核图片
+          </el-button>
+          <el-button type="warning" size="mini" @click="download(row)">
+            文档下载
+          </el-button>
           <el-button
-            v-if="row.status != 'deleted'"
             size="mini"
             type="danger"
             @click="handleDelete(row, $index)"
@@ -150,29 +157,34 @@
       :limit.sync="listQuery.limit"
       @pagination="getList"
     />
-
+    <el-image-viewer
+      v-if="showViewer"
+      :on-close="closeViewer"
+      :url-list="photoList"
+    />
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
       <el-form
         ref="dataForm"
         :rules="rules"
         :model="temp"
         label-position="right"
-        label-width="100px"
-        style="width: 400px; margin-left: 50px"
+        label-width="130px"
+        style="width: 500px; margin-left: 50px"
       >
-        <el-form-item label="创建时间" prop="createdate">
+        <el-form-item label="具体时间" prop="createdate">
           <el-date-picker
             v-model="temp.createdate"
             type="date"
-            placeholder="请选择创建时间"
-            value-format="yyyy-MM-dd"
+            placeholder="请选择具体时间"
+            format="yyyy-MM-dd HH:mm"
+            value-format="yyyy-MM-dd HH:mm"
           />
         </el-form-item>
         <el-form-item label="问题描述" prop="description">
           <el-input
             v-model="temp.description"
             placeholder="请输入问题描述"
-            maxlength="80"
+            maxlength="50"
             show-word-limit
             clearable
           />
@@ -208,6 +220,26 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="道路（地区）或街道" prop="road">
+          <el-input v-model="temp.road" />
+        </el-form-item>
+        <el-form-item label="具体位置" prop="place">
+          <el-input v-model="temp.place" />
+        </el-form-item>
+        <el-form-item label="整改情况" prop="status">
+          <el-select
+            v-model="temp.status"
+            class="filter-item"
+            placeholder="整改情况"
+          >
+            <el-option
+              v-for="item in statusOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="备注">
           <el-input
             v-model="temp.comment"
@@ -226,7 +258,9 @@
             action="#"
             list-type="picture-card"
             :auto-upload="false"
-            :file-list="fileList"
+            :limit="3"
+            :file-list="picList"
+            :on-exceed="exceed"
           >
             <i slot="default" class="el-icon-plus" />
             <div slot="file" slot-scope="{ file }">
@@ -251,9 +285,40 @@
               </span>
             </div>
           </el-upload>
-          <el-dialog :visible.sync="dialogVisible" append-to-body>
-            <img width="100%" :src="dialogImageUrl" alt="">
-          </el-dialog>
+        </el-form-item>
+        <el-form-item label="复核图片" prop="repics">
+          <el-upload
+            ref="uploadRePic"
+            action="#"
+            list-type="picture-card"
+            :auto-upload="false"
+            :limit="3"
+            :file-list="repicList"
+            :on-exceed="exceed"
+          >
+            <i slot="default" class="el-icon-plus" />
+            <div slot="file" slot-scope="{ file }">
+              <img
+                class="el-upload-list__item-thumbnail"
+                :src="file.url"
+                alt=""
+              >
+              <span class="el-upload-list__item-actions">
+                <span
+                  class="el-upload-list__item-preview"
+                  @click="handlePictureCardPreview(file)"
+                >
+                  <i class="el-icon-zoom-in" />
+                </span>
+                <span
+                  class="el-upload-list__item-delete"
+                  @click="handleRemoveReImage(file)"
+                >
+                  <i class="el-icon-delete" />
+                </span>
+              </span>
+            </div>
+          </el-upload>
         </el-form-item>
         <el-form-item label="拍摄时间" prop="filmdate">
           <el-date-picker
@@ -271,19 +336,35 @@
             clearable
           />
         </el-form-item>
+        <el-form-item label="上传文档" prop="docs">
+          <el-upload
+            ref="uploadDoc"
+            action="#"
+            :on-remove="handleRemoveDoc"
+            :file-list="docsList"
+            :auto-upload="false"
+            :limit="1"
+            accept=".doc,.docx"
+            :on-exceed="exceedDoc"
+          >
+            <el-button size="small" type="primary">点击上传</el-button>
+          </el-upload>
+        </el-form-item>
       </el-form>
 
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false"> Cancel </el-button>
+        <el-button @click="dialogFormVisible = false"> 取消 </el-button>
         <el-button
           type="primary"
           @click="dialogStatus === 'create' ? createData() : updateData()"
         >
-          Confirm
+          确认
         </el-button>
       </div>
     </el-dialog>
-
+    <el-dialog :visible.sync="dialogVisible" append-to-body>
+      <img width="100%" :src="dialogImageUrl" alt="">
+    </el-dialog>
     <el-dialog :visible.sync="dialogPvVisible" title="Reading statistics">
       <el-table
         :data="pvData"
@@ -299,19 +380,17 @@
         <el-button
           type="primary"
           @click="dialogPvVisible = false"
-        >Confirm</el-button>
+        >确认</el-button>
       </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import {
-  fetchPv
-} from '@/api/article'
+import { fetchPv } from '@/api/article'
 import waves from '@/directive/waves' // waves directive
-import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
+// import { parseTime } from '@/utils'
 import {
   fetchIssueTypes,
   fetchDistrict,
@@ -320,6 +399,7 @@ import {
   updateIssue,
   deleteIssue
 } from '@/api/env'
+import ElImageViewer from 'element-ui/packages/image/src/image-viewer'
 
 const calendarTypeOptions = [
   { key: 'CN', display_name: 'China' },
@@ -336,7 +416,7 @@ const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
 
 export default {
   name: 'ComplexTable',
-  components: { Pagination },
+  components: { Pagination, ElImageViewer },
   directives: { waves },
   filters: {
     statusFilter(status) {
@@ -356,9 +436,12 @@ export default {
       tableKey: 0,
       list: null,
       total: 0,
+      showViewer: false,
+      picList: [],
+      repicList: [],
+      photoList: [],
       listLoading: true,
       month: '',
-      fileList: [],
       listQuery: {
         page: 1,
         limit: 10,
@@ -371,12 +454,13 @@ export default {
       },
       issueTypes: [],
       districts: [],
+      docsList: [],
       calendarTypeOptions,
       sortOptions: [
         { label: 'ID Ascending', key: '+id' },
         { label: 'ID Descending', key: '-id' }
       ],
-      statusOptions: ['published', 'draft', 'deleted'],
+      statusOptions: ['', '已整改', '未整改'],
       showReviewer: false,
       temp: {
         id: 0,
@@ -389,7 +473,10 @@ export default {
         comment: '',
         type: this.type,
         filmMaker: '',
-        filmdate: new Date()
+        filmdate: new Date(),
+        road: '',
+        place: '',
+        status: ''
       },
       dialogFormVisible: false,
       dialogStatus: '',
@@ -420,9 +507,7 @@ export default {
       dialogVisible: false,
       pvData: [],
       rules: {
-        district: [
-          { required: true, message: '片区必填', trigger: 'blur' }
-        ],
+        district: [{ required: true, message: '片区必填', trigger: 'blur' }],
         issueType: [
           { required: true, message: '问题类型必选', trigger: 'blur' }
         ],
@@ -454,6 +539,31 @@ export default {
     this.getDistricts(this.area)
   },
   methods: {
+    download(row) {
+      if (row.docPath) {
+        window.open('http://localhost:7779/file/doc/' + row.docPath.trim())
+      } else {
+        this.$message.error('该信息没有上传文件！')
+      }
+    },
+    exceed(files, fileList) {
+      this.$message.error('最多上传3张图片！')
+    },
+    exceedDoc(files, fileList) {
+      this.$message.error('最多上传1个文档！')
+    },
+    dateFormat(time) {
+      var date = new Date(time)
+      var year = date.getFullYear()
+      var month =
+        date.getMonth() + 1 < 10
+          ? '0' + (date.getMonth() + 1)
+          : date.getMonth() + 1
+      var day = date.getDate() < 10 ? '0' + date.getDate() : date.getDate()
+      var hour = date.getHours()
+      var minute = date.getMinutes()
+      return year + '-' + month + '-' + day + ' ' + hour + ':' + minute
+    },
     getList() {
       this.listLoading = true
       if (this.month[0]) {
@@ -469,6 +579,36 @@ export default {
         this.total = response.total
         this.listLoading = false
       })
+    },
+    onPreview(row) {
+      this.photoList = []
+      var path = row.imagesPath
+      if (path) {
+        var pathArr = path.split(',')
+        pathArr.forEach((item) => {
+          this.photoList.push(
+            'http://localhost:7779/file/image/' + item.trim()
+          )
+        })
+      }
+      this.showViewer = true
+    },
+    onReImagePreview(row) {
+      this.photoList = []
+      var path = row.reImagesPath
+      if (path) {
+        var pathArr = path.split(',')
+        pathArr.forEach((item) => {
+          this.photoList.push(
+            'http://localhost:7779/file/image/' + item.trim()
+          )
+        })
+      }
+      this.showViewer = true
+    },
+    closeViewer() {
+      this.photoList = []
+      this.showViewer = false
     },
     getIssueTypes() {
       fetchIssueTypes().then((response) => {
@@ -508,7 +648,7 @@ export default {
     resetTemp() {
       this.temp = {
         id: 0,
-        createdate: new Date(),
+        createdate: this.dateFormat(new Date()),
         description: '',
         areaName: this.area,
         area: this.area,
@@ -517,7 +657,10 @@ export default {
         comment: '',
         type: this.type,
         filmMaker: '',
-        filmdate: new Date()
+        filmdate: this.dateFormat(new Date()),
+        road: '',
+        place: '',
+        status: ''
       }
     },
     handleCreate() {
@@ -527,6 +670,12 @@ export default {
       this.dialogStatus = 'create'
       if (this.$refs.uploadPic) {
         this.$refs.uploadPic.clearFiles()
+      }
+      if (this.$refs.uploadDoc) {
+        this.$refs.uploadDoc.clearFiles()
+      }
+      if (this.$refs.uploadRePic) {
+        this.$refs.uploadRePic.clearFiles()
       }
       this.dialogFormVisible = true
       this.$nextTick(() => {
@@ -540,10 +689,18 @@ export default {
           for (const key in this.temp) {
             formData.append(key, this.temp[key])
           }
-          this.fileList.map(item => {
-            formData.append('photo', item.raw)
+          const fileList = this.$refs.uploadPic.uploadFiles
+          fileList.map((item) => {
+            formData.append('imagesfile', item.raw)
           })
-
+          const refileList = this.$refs.uploadRePic.uploadFiles
+          refileList.map((item) => {
+            formData.append('recheckimages', item.raw)
+          })
+          const docList = this.$refs.uploadDoc.uploadFiles
+          docList.map((item) => {
+            formData.append('doc', item.raw)
+          })
           createIssue(formData).then(() => {
             // this.list.unshift(this.temp);
             this.dialogFormVisible = false
@@ -565,6 +722,48 @@ export default {
       this.temp.area = this.area
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
+
+      // show images
+      this.picList = []
+      var path = row.imagesPath
+      if (path) {
+        var pathArr = path.split(',')
+        pathArr.forEach((item) => {
+          const imageUrl = 'http://localhost:7779/file/image/' + item.trim()
+          const imageName = item
+            .trim()
+            .substring(item.trim().lastIndexOf('\\') + 1)
+          this.picList.push({ name: imageName, url: imageUrl })
+        })
+      }
+
+      // show recheck images
+      this.repicList = []
+      var repath = row.reImagesPath
+      if (repath) {
+        var pathArr1 = repath.split(',')
+        pathArr1.forEach((item) => {
+          const reimageUrl = 'http://localhost:7779/file/image/' + item.trim()
+          const reimageName = item
+            .trim()
+            .substring(item.trim().lastIndexOf('\\') + 1)
+          this.repicList.push({ name: reimageName, url: reimageUrl })
+        })
+      }
+
+      // show doc
+      this.docsList = []
+      var docpath = row.docPath
+      if (docpath) {
+        var pathArr2 = docpath.split(',')
+        pathArr2.forEach((item) => {
+          const docUrl = 'http://localhost:7779/file/doc/' + item.trim()
+          const docName = item
+            .trim()
+            .substring(item.trim().lastIndexOf('\\') + 1)
+          this.docsList.push({ name: docName, url: docUrl })
+        })
+      }
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
@@ -572,8 +771,26 @@ export default {
     updateData() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          updateIssue(tempData).then(() => {
+          // const tempData = Object.assign({}, this.temp);
+          const formData = new FormData()
+          for (const key in this.temp) {
+            formData.append(key, this.temp[key])
+          }
+          const fileList = this.$refs.uploadPic.uploadFiles
+
+          fileList.map((item) => {
+            formData.append('imagesfile', item.raw)
+          })
+          const refileList = this.$refs.uploadRePic.uploadFiles
+          refileList.map((item) => {
+            formData.append('recheckimagesfile', item.raw)
+          })
+          const docList = this.$refs.uploadDoc.uploadFiles
+          docList.map((item) => {
+            formData.append('docfile', item.raw)
+          })
+
+          updateIssue(formData).then(() => {
             this.getList()
             this.dialogFormVisible = false
             this.$notify({
@@ -594,7 +811,7 @@ export default {
       })
         .then(async() => {
           await deleteIssue(row.id)
-          this.list.splice(index, 1)
+          this.getList()
           this.$notify({
             title: 'Success',
             message: '删除成功',
@@ -613,6 +830,16 @@ export default {
       })
       fileList.splice(index, 1)
     },
+    handleRemoveReImage(file) {
+      const fileList = this.$refs.uploadRePic.uploadFiles
+      const index = fileList.findIndex((fileItem) => {
+        return fileItem.uid === file.uid
+      })
+      fileList.splice(index, 1)
+    },
+    handleRemoveDoc(file, fileList) {
+      console.log(file, fileList)
+    },
     handlePictureCardPreview(file) {
       this.dialogImageUrl = file.url
       this.dialogVisible = true
@@ -626,28 +853,91 @@ export default {
     handleDownload() {
       this.downloadLoading = true
       import('@/vendor/Export2Excel').then((excel) => {
-        const tHeader = ['timestamp', 'title', 'type', 'importance', 'status']
+        const letter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        const tHeader = ['', '', '', '早', '中', '晚', '', '']
+        for (const item in this.issueTypes) {
+          tHeader.push(this.issueTypes[item].name)
+        }
+        tHeader.push('')
+        var firstlineEndA = Math.floor(tHeader.length / letter.length)
+        var fisrtlineEndB = tHeader.length % letter.length
+        var cellIdx = ''
+        if (firstlineEndA > 0) {
+          cellIdx = letter[firstlineEndA - 1]
+        }
+        cellIdx = cellIdx + letter[fisrtlineEndB - 1]
+
+        var merges = ['D3:F3', 'A3:A4', 'B3:B4', 'C3:C4', 'G3:G4', 'H3:H4']
+        merges.push('A1:' + cellIdx + '1')
+        merges.push('A2:' + cellIdx + '2')
+
+        var typesIdx = 8 + this.issueTypes.length
+        var typefirst = Math.floor(typesIdx / letter.length)
+        var typesecond = typesIdx % letter.length
+        var tidx = ''
+        if (typefirst > 0) {
+          tidx = letter[typefirst - 1]
+        }
+        tidx = tidx + letter[typesecond - 1]
+
+        merges.push('I3:' + tidx + '3')
+
+        var commentIdx = typesIdx + 1
+        var commentfirst = Math.floor(commentIdx / letter.length)
+        var commentsecond = commentIdx % letter.length
+        var cidx = ''
+        if (commentfirst > 0) {
+          cidx = letter[commentfirst - 1]
+        }
+        cidx = cidx + letter[commentsecond - 1]
+
+        merges.push(cidx + '3:' + cidx + '4')
+
+        var firstLine = ['四中队巡查情况登记表']
+        for (var i = 0; i < tHeader.length - 1; i++) {
+          firstLine.push('')
+        }
+
+        var secondLine = []
+        for (var j = 0; j < tHeader.length; j++) {
+          secondLine.push('')
+        }
+
+        var thirdLine = ['序号', '区属中队', '日期', '具体时间', '', '', '道路（街道）或地区', '具体位置', '问题类型']
+        for (var m = 0; m < this.issueTypes.length - 1; m++) {
+          thirdLine.push('')
+        }
+        thirdLine.push('备注')
+
+        const multiHeader = [firstLine, secondLine, thirdLine]
+        // console.log(multiheader);
+        //  const multiHeader = [['Id', 'Main Information', '', '', 'Date']]
         const filterVal = [
-          'timestamp',
-          'title',
-          'type',
-          'importance',
-          'status'
+          'id',
+          'districtName',
+          'createdate',
+          'road',
+          'place',
+          'issueTypeName',
+          'comment'
         ]
         const data = this.formatJson(filterVal)
         excel.export_json_to_excel({
+          multiHeader,
           header: tHeader,
+          merges,
           data,
-          filename: 'table-list'
+          filename: '督察数据库' + this.dateFormat(new Date())
         })
         this.downloadLoading = false
       })
     },
     formatJson(filterVal) {
+      var i = 1
       return this.list.map((v) =>
         filterVal.map((j) => {
-          if (j === 'timestamp') {
-            return parseTime(v[j])
+          if (j === 'id') {
+            return i++
           } else {
             return v[j]
           }
