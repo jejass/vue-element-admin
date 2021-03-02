@@ -390,7 +390,7 @@
 import { fetchPv } from '@/api/article'
 import waves from '@/directive/waves' // waves directive
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
-// import { parseTime } from '@/utils'
+import { parseTime } from '@/utils'
 import {
   fetchIssueTypes,
   fetchDistrict,
@@ -853,7 +853,34 @@ export default {
     handleDownload() {
       this.downloadLoading = true
       import('@/vendor/Export2Excel').then((excel) => {
-        const letter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        const letter = [
+          'A',
+          'B',
+          'C',
+          'D',
+          'E',
+          'F',
+          'G',
+          'H',
+          'I',
+          'J',
+          'K',
+          'L',
+          'M',
+          'N',
+          'O',
+          'P',
+          'Q',
+          'R',
+          'S',
+          'T',
+          'U',
+          'V',
+          'W',
+          'X',
+          'Y',
+          'Z'
+        ]
         const tHeader = ['', '', '', '早', '中', '晚', '', '']
         for (const item in this.issueTypes) {
           tHeader.push(this.issueTypes[item].name)
@@ -903,24 +930,37 @@ export default {
           secondLine.push('')
         }
 
-        var thirdLine = ['序号', '区属中队', '日期', '具体时间', '', '', '道路（街道）或地区', '具体位置', '问题类型']
+        var thirdLine = [
+          '序号',
+          '区属中队',
+          '日期',
+          '具体时间',
+          '',
+          '',
+          '道路（街道）或地区',
+          '具体位置',
+          '问题类型'
+        ]
         for (var m = 0; m < this.issueTypes.length - 1; m++) {
           thirdLine.push('')
         }
         thirdLine.push('备注')
 
         const multiHeader = [firstLine, secondLine, thirdLine]
-        // console.log(multiheader);
-        //  const multiHeader = [['Id', 'Main Information', '', '', 'Date']]
         const filterVal = [
           'id',
           'districtName',
           'createdate',
+          'morning',
+          'noon',
+          'night',
           'road',
-          'place',
-          'issueTypeName',
-          'comment'
+          'place'
         ]
+        for (const item in this.issueTypes) {
+          filterVal.push(this.issueTypes[item].name)
+        }
+        filterVal.push('comment')
         const data = this.formatJson(filterVal)
         excel.export_json_to_excel({
           multiHeader,
@@ -938,6 +978,45 @@ export default {
         filterVal.map((j) => {
           if (j === 'id') {
             return i++
+          } else if (j === 'createdate') {
+            return parseTime(v[j], '{y}-{m}-{d}')
+          } else if (j === 'morning' || j === 'noon' || j === 'night') {
+            var c = parseTime(v['createdate'], '{h}')
+            if (c > 0 && c < 8) {
+              if (j === 'morning') {
+                return parseTime(v['createdate'], '{h}:{i}')
+              } else {
+                return ''
+              }
+            } else if (c < 16) {
+              if (j === 'noon') {
+                return parseTime(v['createdate'], '{h}:{i}')
+              } else {
+                return ''
+              }
+            } else {
+              if (j === 'night') {
+                return parseTime(v['createdate'], '{h}:{i}')
+              } else {
+                return ''
+              }
+            }
+          } else if (
+            j !== 'id' &&
+            j !== 'districtName' &&
+            j !== 'createdate' &&
+            j !== 'morning' &&
+            j !== 'noon' &&
+            j !== 'night' &&
+            j !== 'road' &&
+            j !== 'place' &&
+            j !== 'comment'
+          ) {
+            if (v['issueTypeName'] === j) {
+              return '√'
+            } else {
+              return ''
+            }
           } else {
             return v[j]
           }

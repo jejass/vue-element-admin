@@ -209,6 +209,46 @@ export function export_json_to_excel({
   wb.SheetNames.push(ws_name);
   wb.Sheets[ws_name] = ws;
 
+  var dataInfo = wb.Sheets[wb.SheetNames[0]];
+
+  const borderAll = {
+    top: {
+      style: "thin"
+    },
+    bottom: {
+      style: "thin"
+    },
+    left: {
+      style: "thin"
+    },
+    right: {
+      style: "thin"
+    }
+  }
+
+  for (var i in dataInfo) {
+    if (
+      i == "!ref" ||
+      i == "!merges" ||
+      i == "!cols" ||
+      i == "!rows"
+    ) { } else {
+      console.log(dataInfo[i]);
+      dataInfo[i].s = {
+        border: borderAll,
+        alignment: {
+          horizontal: "center",
+          vertical: "center"
+        },
+        font: {
+          name: "黑体",
+          sz: 12
+        }
+      };
+    }
+  }
+
+
   var wbout = XLSX.write(wb, {
     bookType: bookType,
     bookSST: false,
